@@ -876,6 +876,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         # Ancestry check, not str.startswith (which a `<cwd>-evil` sibling bypasses).
         if cwd not in out_path.parents:
             print("[error] --out path must be within cwd", file=sys.stderr); return 1
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(draft)
         section(f"report — {args.platform}")
         say(f"  Draft written: {color(str(out_path), 'bold')}")
