@@ -445,8 +445,15 @@ _P1_HINTS = ("api.", "api-", "graphql", "auth.", "sso.", "login.", "account.",
 _KILL_HINTS = ("cdn.", "static.", "assets.", "img.", "images.", "media.", "fonts.")
 
 
-def _rank_host(host: str) -> tuple[str, str]:
+def _rank_host(host: str, target: str = "") -> tuple[str, str]:
     h = host.lower()
+    # Match hints against the subdomain labels only, so the target's own name
+    # (e.g. rapidapi.com contains "api.") doesn't make every host P1.
+    t = target.lower()
+    if t and h.endswith("." + t):
+        h = h[: -len(t)]
+    elif t and h == t:
+        h = ""
     if any(k in h for k in _P1_HINTS):
         return "P1", "high-value surface (api/auth/admin/non-prod)"
     if any(h.startswith(k) for k in _KILL_HINTS):
@@ -477,7 +484,7 @@ def build_manifest(target: str, subs: set, resolved: dict, live: list) -> dict:
     ranked = []
     for host in sorted(live_by_host):
         r = live_by_host[host]
-        prio, why = _rank_host(host)
+        prio, why = _rank_host(host, target)
         bug_classes = sorted(classify_url(r["url"])["matches"].keys()) if r.get("url") else []
         ranked.append({"url": r.get("url"), "host": host, "bug_classes": bug_classes,
                        "priority": prio, "rationale": why})
